@@ -7,8 +7,8 @@ import (
 )
 
 type HandlerSettings struct {
-	StartInterval  string `md:"startDelay"`     // The start delay (ex. 1m, 1h, etc.), immediate if not specified
-	RepeatInterval string `md:"repeatInterval"` // The repeat interval (ex. 1m, 1h, etc.), doesn't repeat if not specified
+	StartInterval  string `md:"interval"` // The start delay (ex. 1m, 1h, etc.), immediate if not specified
+	RepeatInterval string `md:"offset"`   // The repeat interval (ex. 1m, 1h, etc.), doesn't repeat if not specified
 }
 
 var triggerMd = trigger.NewMetadata(&HandlerSettings{})
