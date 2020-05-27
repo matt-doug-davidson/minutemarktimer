@@ -1,21 +1,21 @@
 {
-  "name": "flogo-timer",
+  "name": "flogo-minutemarktimer",
   "type": "flogo:trigger",
-  "version": "0.10.0",
-  "title": "Timer",
-  "description": "Simple Timer trigger",
+  "version": "0.0.1",
+  "title": "Minute Mark Timer",
+  "description": "Simple Minute Mark Timer trigger",
   "homepage": "https://github.com/project-flogo/contrib/tree/master/trigger/timer",
   "handler": {
     "settings": [
       {
-        "name": "startDelay",
+        "name": "interval",
         "type": "string",
-        "description": "The start delay (ex. 1m, 1h, etc.), immediate if not specified"
+        "description": "Interval in minutes (must be 1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30"
       },
       {
-        "name": "repeatInterval",
+        "name": "offset",
         "type": "string",
-        "description": "The repeat interval (ex. 1m, 1h, etc.), doesn't repeat if not specified"
+        "description": "Offset in minutes from the main interval"
       }
     ]
   }
