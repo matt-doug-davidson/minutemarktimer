@@ -111,10 +111,8 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 }
 
 func (m *MarkTimer) adjust() {
-	//m.nextTimestamp = calculateNextMark(m.Interval, m.Offset)
+	m.nextTimestamp = calculateNextMark(m.Interval, m.Offset)
 }
-
-//var timers []*MarkTimer
 
 func (t *Trigger) addMarkTimer(interval int64, offset int64, handler trigger.Handler) {
 	timer := &MarkTimer{
@@ -126,6 +124,7 @@ func (t *Trigger) addMarkTimer(interval int64, offset int64, handler trigger.Han
 	t.timers = append(t.timers, timer)
 	fmt.Println(t.timers)
 }
+
 func epochSecondsNow() int64 {
 	return time.Now().Unix()
 }
@@ -211,7 +210,6 @@ func (t *Trigger) schedule(what func()) chan bool {
 			what() // Just print timestamp in callback
 			t.adjustTimers()
 			delay = t.findEarliestDelay()
-			stop <- true
 		}
 	}()
 
