@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/carlescere/scheduler"
+	"github.com/project-flogo/core/data/metadata"
 	"github.com/project-flogo/core/support/log"
 	"github.com/project-flogo/core/trigger"
 )
@@ -44,7 +45,22 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 	t.handlers = ctx.GetHandlers()
 	t.logger = ctx.Logger()
 
+	s := &HandlerSettings{}
+
+	//Handlers slice data is available here
 	for _, handler := range t.handlers {
+
+		err := metadata.MapToStruct(handler.Settings(), s, true)
+		if err != nil {
+			t.logger.Error("Mapping metadata to struct failed", err.Error())
+			return err
+		}
+		t.logger.Info("Interval: ", s.Interval)
+		t.logger.Info("Offset: ", s.Offset)
+
+		t.logger.Infof("Type of Interval is %T", s.Interval)
+		t.logger.Infof("Type of Offset is %T", s.Offset)
+
 		fmt.Println(handler)
 		t.logger.Info("Initialize: Handler loop")
 	}
@@ -80,10 +96,7 @@ func addMarkTimer(interval int64, offset int64, handler trigger.Handler) {
 // Start implements ext.Trigger.Start
 func (t *Trigger) Start() error {
 	t.logger.Info("Starting")
-	for _, handler := range t.handlers {
-		fmt.Println(handler)
-		t.logger.Info("Initialize: Handler loop")
-	}
+
 	return nil
 }
 
