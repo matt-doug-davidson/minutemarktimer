@@ -1,6 +1,7 @@
 package minutemarktimer
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -168,8 +169,12 @@ func (t *Trigger) findEarliestDelay() time.Duration {
 	return d
 }
 
-func (t *Trigger) runHandler(handler trigger.Handler) {
+func (t *Trigger) runHandler(handler trigger.Handler, logger log.Logger) {
 	t.logger.Info(time.Now())
+	_, err := handler.Handle(context.Background(), nil)
+	if err != nil {
+		logger.Error("Error running handler: ", err.Error())
+	}
 }
 
 func (t *Trigger) adjustTimers() {
@@ -184,7 +189,7 @@ func (t *Trigger) adjustTimers() {
 		if minutesNow == minutes {
 			t.logger.Info("timer expired. Handler", timer.handler)
 			// go timer.handler(timer.Interval, nil)
-			go t.runHandler(timer.handler)
+			go t.runHandler(timer.handler, t.logger)
 			timer.adjust()
 		}
 	}
@@ -234,7 +239,8 @@ func (t *Trigger) Start() error {
 // Stop implements ext.Trigger.Stop
 func (t *Trigger) Stop() error {
 	t.logger.Info("Stop: Stopping")
-	stop <- true
-	t.logger.Info("Stop: Stopped")
+	// Pushing true into the stop channel blocks at this point.
+	//stop <- true
+	//t.logger.Info("Stop: Stopped")
 	return nil
 }
