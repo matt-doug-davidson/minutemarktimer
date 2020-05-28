@@ -46,7 +46,7 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 
 	for _, handler := range t.handlers {
 		fmt.Println(handler)
-		t.logger.Debug("Initialize: Handler loop")
+		t.logger.Info("Initialize: Handler loop")
 	}
 
 	return nil
@@ -80,6 +80,10 @@ func addMarkTimer(interval int64, offset int64, handler trigger.Handler) {
 // Start implements ext.Trigger.Start
 func (t *Trigger) Start() error {
 	t.logger.Info("Starting")
+	for _, handler := range t.handlers {
+		fmt.Println(handler)
+		t.logger.Info("Initialize: Handler loop")
+	}
 	return nil
 }
 
