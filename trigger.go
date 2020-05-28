@@ -55,8 +55,8 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 			t.logger.Error("Mapping metadata to struct failed", err.Error())
 			return err
 		}
-		t.logger.Info("Interval: ", s.Interval)
-		t.logger.Info("Offset: ", s.Offset)
+		t.logger.Infof("Interval: %s", s.Interval)
+		t.logger.Infof("Offset: %s", s.Offset)
 
 		t.logger.Infof("Type of Interval is %T", s.Interval)
 		t.logger.Infof("Type of Offset is %T", s.Offset)
