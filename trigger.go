@@ -2,6 +2,7 @@ package minutemarktimer
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/carlescere/scheduler"
 	"github.com/project-flogo/core/data/metadata"
@@ -61,10 +62,25 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 		t.logger.Infof("Type of Interval is %T", s.Interval)
 		t.logger.Infof("Type of Offset is %T", s.Offset)
 
+		// Convert to int64
+		interval, err := strconv.ParseInt(s.Interval, 10, 64)
+		if err != nil {
+			t.logger.Error("Interval conversion failed. Error:", err.Error())
+			return err
+		}
+		offset, err := strconv.ParseInt(s.Offset, 10, 64)
+		if err != nil {
+			t.logger.Error("Offset conversion failed. Error:", err.Error())
+			return err
+		}
+
+		addMarkTimer(interval, offset, handler)
+
 		fmt.Println(handler)
 		t.logger.Info("Initialize: Handler loop")
 	}
 
+	t.logger.Info("Timers", timers)
 	return nil
 }
 
@@ -90,7 +106,6 @@ func addMarkTimer(interval int64, offset int64, handler trigger.Handler) {
 	}
 	timers = append(timers, timer)
 	fmt.Println(timers)
-
 }
 
 // Start implements ext.Trigger.Start
