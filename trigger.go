@@ -9,8 +9,8 @@ import (
 )
 
 type HandlerSettings struct {
-	StartInterval  string `md:"interval"` // The start delay (ex. 1m, 1h, etc.), immediate if not specified
-	RepeatInterval string `md:"offset"`   // The repeat interval (ex. 1m, 1h, etc.), doesn't repeat if not specified
+	Interval string `md:"interval"` // The start delay (ex. 1m, 1h, etc.), immediate if not specified
+	Offset   string `md:"offset"`   // The repeat interval (ex. 1m, 1h, etc.), doesn't repeat if not specified
 }
 
 var triggerMd = trigger.NewMetadata(&HandlerSettings{})
@@ -46,6 +46,7 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 
 	for _, handler := range t.handlers {
 		fmt.Println(handler)
+		t.logger.Debug("Initialize: Handler loop")
 	}
 
 	return nil
