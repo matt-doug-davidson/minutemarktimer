@@ -3,7 +3,6 @@ package minutemarktimer
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -61,17 +60,11 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 	//Handlers slice data is available here
 	for _, handler := range t.handlers {
 
-		t.logger.Info("Initialize: Handler loop")
 		err := metadata.MapToStruct(handler.Settings(), s, true)
 		if err != nil {
 			t.logger.Error("Mapping metadata to struct failed", err.Error())
 			return err
 		}
-		t.logger.Infof("Interval: %s", s.Interval)
-		t.logger.Infof("Offset: %s", s.Offset)
-
-		t.logger.Infof("Type of Interval is %T", s.Interval)
-		t.logger.Infof("Type of Offset is %T", s.Offset)
 
 		// Convert to int64
 		interval, err := strconv.ParseInt(s.Interval, 10, 64)
@@ -104,10 +97,6 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 		t.addMarkTimer(interval, offset, handler)
 	}
 
-	t.logger.Info("Timers", t.timers)
-	for index, timer := range t.timers {
-		t.logger.Info("Index", index, "timer", timer)
-	}
 	return nil
 }
 
@@ -123,7 +112,6 @@ func (t *Trigger) addMarkTimer(interval int64, offset int64, handler trigger.Han
 		nextTimestamp: 0,
 	}
 	t.timers = append(t.timers, timer)
-	fmt.Println(t.timers)
 }
 
 func epochSecondsNow() int64 {
@@ -136,8 +124,6 @@ func epochNanoSecNow() int64 {
 
 func calculateNextMark(interval int64, offset int64) int64 {
 	// Get current times
-	start := time.Now()
-	fmt.Println(start)
 	seconds := epochSecondsNow()
 	// Current mark
 	currentMinute := seconds / 60                             // minutes
@@ -165,42 +151,32 @@ func (t *Trigger) findEarliestDelay() time.Duration {
 	nanoSeconds := epochNanoSecNow()
 	delayToNextMark := earliest - nanoSeconds
 	d := time.Duration(delayToNextMark) * time.Nanosecond
-	t.logger.Info("findEarliestDelay: Delay ", d)
 	return d
 }
 
-func (t *Trigger) runHandler(handler trigger.Handler, logger log.Logger) {
-	t.logger.Info(time.Now())
+func (t *Trigger) runHandler(handler trigger.Handler) {
+	//t.logger.Info("Running handle ", time.Now())
 	_, err := handler.Handle(context.Background(), nil)
 	if err != nil {
-		logger.Error("Error running handler: ", err.Error())
+		t.logger.Error("Error running handler: ", err.Error())
 	}
 }
 
 func (t *Trigger) adjustTimers() {
-	//currentMark := calculateCurrentMark()
-	//fmt.Println("currentMark", currentMark)
 	secondsNow := epochNanoSecNow()
 	minutesNow := secondsNow / 60000000000
-	//fmt.Println(minutesNow)
 	for _, timer := range t.timers {
-		//fmt.Println(timer)
 		minutes := timer.nextTimestamp / 60000000000
 		if minutesNow == minutes {
-			t.logger.Info("timer expired. Handler", timer.handler)
-			// go timer.handler(timer.Interval, nil)
-			go t.runHandler(timer.handler, t.logger)
+			go t.runHandler(timer.handler)
 			timer.adjust()
 		}
 	}
-	//earliest := findEarliestNext()
-	//fmt.Println("earliest", earliest)
 }
 
 var stop chan bool = nil
 
-func (t *Trigger) schedule(what func()) chan bool {
-	t.logger.Info("Enter schedule")
+func (t *Trigger) schedule() chan bool {
 	stop := make(chan bool)
 	delay := t.findEarliestDelay()
 	go func() {
@@ -211,8 +187,6 @@ func (t *Trigger) schedule(what func()) chan bool {
 				t.logger.Info("Stopping")
 				return
 			}
-			//fmt.Println("Here")
-			what() // Just print timestamp in callback
 			t.adjustTimers()
 			delay = t.findEarliestDelay()
 		}
@@ -223,24 +197,17 @@ func (t *Trigger) schedule(what func()) chan bool {
 
 // Start implements ext.Trigger.Start
 func (t *Trigger) Start() error {
-	t.logger.Info("Starting")
 	for _, timer := range t.timers {
 		nm := calculateNextMark(timer.Interval, timer.Offset)
 		timer.nextTimestamp = nm
 	}
-	earliest := t.findEarliestNext()
-	t.logger.Info("earliest: ", earliest)
-	ping := func() { t.logger.Info(time.Now()) }
-	t.schedule(ping)
-	t.logger.Info("Trigger Start Completed")
+	t.schedule()
 	return nil
 }
 
 // Stop implements ext.Trigger.Stop
 func (t *Trigger) Stop() error {
-	t.logger.Info("Stop: Stopping")
 	// Pushing true into the stop channel blocks at this point.
 	//stop <- true
-	//t.logger.Info("Stop: Stopped")
 	return nil
 }
