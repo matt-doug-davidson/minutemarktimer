@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
-	"github.com/carlescere/scheduler"
 	"github.com/project-flogo/core/data/metadata"
 	"github.com/project-flogo/core/support/log"
 	"github.com/project-flogo/core/trigger"
@@ -35,10 +35,18 @@ func (*Factory) New(config *trigger.Config) (trigger.Trigger, error) {
 	return &Trigger{}, nil
 }
 
+type MarkTimer struct {
+	Interval      int64
+	Offset        int64
+	handler       trigger.Handler
+	nextTimestamp int64
+}
+
 type Trigger struct {
-	timers   []*scheduler.Job
+	//timers   []*scheduler.Job
 	handlers []trigger.Handler
 	logger   log.Logger
+	timers   []*MarkTimer
 }
 
 // Init implements trigger.Init
@@ -92,43 +100,84 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 			}
 		}
 
-		addMarkTimer(interval, offset, handler)
+		t.addMarkTimer(interval, offset, handler)
 	}
 
-	t.logger.Info("Timers", timers)
-	for index, timer := range timers {
+	t.logger.Info("Timers", t.timers)
+	for index, timer := range t.timers {
 		t.logger.Info("Index", index, "timer", timer)
 	}
 	return nil
-}
-
-type MarkTimer struct {
-	Interval      int64
-	Offset        int64
-	handler       trigger.Handler
-	nextTimestamp int64
 }
 
 func (m *MarkTimer) adjust() {
 	//m.nextTimestamp = calculateNextMark(m.Interval, m.Offset)
 }
 
-var timers []*MarkTimer
+//var timers []*MarkTimer
 
-func addMarkTimer(interval int64, offset int64, handler trigger.Handler) {
+func (t *Trigger) addMarkTimer(interval int64, offset int64, handler trigger.Handler) {
 	timer := &MarkTimer{
 		Interval:      interval,
 		Offset:        offset,
 		handler:       handler,
 		nextTimestamp: 0,
 	}
-	timers = append(timers, timer)
-	fmt.Println(timers)
+	t.timers = append(t.timers, timer)
+	fmt.Println(t.timers)
+}
+func epochSecondsNow() int64 {
+	return time.Now().Unix()
+}
+
+func epochNanoSecNow() int64 {
+	return time.Now().UnixNano()
+}
+
+func calculateNextMark(interval int64, offset int64) int64 {
+	// Get current times
+	start := time.Now()
+	fmt.Println(start)
+	seconds := epochSecondsNow()
+	// Current mark
+	currentMinute := seconds / 60                             // minutes
+	minuteOfHour := currentMinute % 60                        // minutes
+	currentMarkOfHour := (minuteOfHour / interval) * interval // minutes
+	// Next Mark
+	nextMarkOfHour := currentMarkOfHour + interval
+	nextMarkSeconds := currentMinute + nextMarkOfHour - minuteOfHour
+	nextMarkNanoSecs := nextMarkSeconds * 60000000000
+	return nextMarkNanoSecs
+}
+
+func (t *Trigger) findEarliestNext() int64 {
+	earliest := t.timers[0].nextTimestamp
+	for _, timer := range t.timers {
+		if timer.nextTimestamp < earliest {
+			earliest = timer.nextTimestamp
+		}
+	}
+	return earliest
+}
+
+func (t *Trigger) findEarliestDelay() time.Duration {
+	earliest := t.findEarliestNext()
+	nanoSeconds := epochNanoSecNow()
+	delayToNextMark := earliest - nanoSeconds
+	d := time.Duration(delayToNextMark) * time.Nanosecond
+	t.logger.Info("findEarliestDelay: Delay ", d)
+	return d
 }
 
 // Start implements ext.Trigger.Start
 func (t *Trigger) Start() error {
 	t.logger.Info("Starting")
+	for _, timer := range t.timers {
+		nm := calculateNextMark(timer.Interval, timer.Offset)
+		timer.nextTimestamp = nm
+	}
+	earliest := t.findEarliestNext()
+	t.logger.Info("earliest: ", earliest)
 
 	return nil
 }
