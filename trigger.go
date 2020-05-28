@@ -211,6 +211,7 @@ func (t *Trigger) schedule(what func()) chan bool {
 			what() // Just print timestamp in callback
 			t.adjustTimers()
 			delay = t.findEarliestDelay()
+			stop <- true
 		}
 	}()
 
