@@ -1,6 +1,7 @@
 package minutemarktimer
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -51,6 +52,7 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 	//Handlers slice data is available here
 	for _, handler := range t.handlers {
 
+		t.logger.Info("Initialize: Handler loop")
 		err := metadata.MapToStruct(handler.Settings(), s, true)
 		if err != nil {
 			t.logger.Error("Mapping metadata to struct failed", err.Error())
@@ -68,19 +70,35 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 			t.logger.Error("Interval conversion failed. Error:", err.Error())
 			return err
 		}
+
+		if interval > 60 {
+			t.logger.Error("Interval must be less than or equal to 60")
+			return errors.New("Interval must be less than or equal to 60")
+		}
+		if 60%interval != 0 {
+			t.logger.Error("Interval must be a factor of 60")
+			return errors.New("Interval must be a factor of 60")
+		}
+
 		offset, err := strconv.ParseInt(s.Offset, 10, 64)
 		if err != nil {
 			t.logger.Error("Offset conversion failed. Error:", err.Error())
 			return err
 		}
+		if interval < 2 {
+			if offset > 1 {
+				t.logger.Error("Interval of 2 cannot have offset greater than 1")
+				return errors.New("Interval of 2 cannot have offset greater than 1")
+			}
+		}
 
 		addMarkTimer(interval, offset, handler)
-
-		fmt.Println(handler)
-		t.logger.Info("Initialize: Handler loop")
 	}
 
 	t.logger.Info("Timers", timers)
+	for index, timer := range timers {
+		t.logger.Info("Index", index, "timer", timer)
+	}
 	return nil
 }
 
