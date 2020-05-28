@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+type Handler func(cntx int64, triggerData interface{}) string
+
 func UnixMicro() int64 {
 	now := time.Now()
 	return now.UnixNano() / 1000
@@ -86,7 +88,7 @@ func calculateDelay(interval int64, offset int64) time.Duration {
 type MarkTimer struct {
 	Interval      int64
 	Offset        int64
-	handler       int64
+	handler       Handler
 	nextTimestamp int64
 }
 
@@ -96,7 +98,7 @@ func (m *MarkTimer) adjust() {
 
 var timers []*MarkTimer
 
-func addMarkTimer(interval int64, offset int64, handler int64) {
+func addMarkTimer(interval int64, offset int64, handler Handler) {
 	timer := &MarkTimer{
 		Interval:      interval,
 		Offset:        offset,
@@ -138,6 +140,14 @@ func Start() {
 	fmt.Println("earliest", earliest)
 }
 
+func runHandler(handler Handler) {
+	err := handler(1, nil)
+
+	if err != "" {
+		fmt.Println("Error running handler: ", err)
+	}
+}
+
 func adjustTimers() {
 	//currentMark := calculateCurrentMark()
 	//fmt.Println("currentMark", currentMark)
@@ -149,6 +159,8 @@ func adjustTimers() {
 		minutes := timer.nextTimestamp / 60000000000
 		if minutesNow == minutes {
 			fmt.Println("timer expired. Handler", timer.handler)
+			// go timer.handler(timer.Interval, nil)
+			go runHandler(timer.handler)
 			timer.adjust()
 		}
 	}
@@ -180,6 +192,11 @@ func schedule(what func(), delay time.Duration) chan bool {
 
 var stop chan bool = nil
 
+func handler(cntx int64, triggerData interface{}) string {
+	fmt.Println("handler()", cntx)
+	return "End of handler"
+}
+
 func main() {
 
 	fmt.Println("Timers")
@@ -187,10 +204,10 @@ func main() {
 	secondsNow := epochSecondsNow()
 	fmt.Println("epochSecondsNow()", secondsNow)
 
-	addMarkTimer(1, 1, 1)
-	addMarkTimer(2, 1, 2)
-	addMarkTimer(3, 1, 3)
-	addMarkTimer(4, 1, 4)
+	addMarkTimer(1, 1, handler)
+	addMarkTimer(2, 1, handler)
+	addMarkTimer(3, 1, handler)
+	addMarkTimer(4, 1, handler)
 	Start()
 	ping := func() { fmt.Println(time.Now()) }
 
