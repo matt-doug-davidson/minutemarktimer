@@ -79,10 +79,12 @@ func addMarkTimer(interval int64, offset int64, handler trigger.Handler) {
 
 // Start implements ext.Trigger.Start
 func (t *Trigger) Start() error {
+	t.logger.Info("Starting")
 	return nil
 }
 
 // Stop implements ext.Trigger.Stop
 func (t *Trigger) Stop() error {
+	t.logger.Info("Stopping")
 	return nil
 }
