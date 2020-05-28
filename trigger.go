@@ -233,7 +233,8 @@ func (t *Trigger) Start() error {
 
 // Stop implements ext.Trigger.Stop
 func (t *Trigger) Stop() error {
-	t.logger.Info("Stopping")
+	t.logger.Info("Stop: Stopping")
 	stop <- true
+	t.logger.Info("Stop: Stopped")
 	return nil
 }
