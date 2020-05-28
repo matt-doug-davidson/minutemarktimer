@@ -169,6 +169,54 @@ func (t *Trigger) findEarliestDelay() time.Duration {
 	return d
 }
 
+func (t *Trigger) runHandler(handler trigger.Handler) {
+	t.logger.Info(time.Now())
+}
+
+func (t *Trigger) adjustTimers() {
+	//currentMark := calculateCurrentMark()
+	//fmt.Println("currentMark", currentMark)
+	secondsNow := epochNanoSecNow()
+	minutesNow := secondsNow / 60000000000
+	//fmt.Println(minutesNow)
+	for _, timer := range t.timers {
+		//fmt.Println(timer)
+		minutes := timer.nextTimestamp / 60000000000
+		if minutesNow == minutes {
+			t.logger.Info("timer expired. Handler", timer.handler)
+			// go timer.handler(timer.Interval, nil)
+			go t.runHandler(timer.handler)
+			timer.adjust()
+		}
+	}
+	//earliest := findEarliestNext()
+	//fmt.Println("earliest", earliest)
+}
+
+var stop chan bool = nil
+
+func (t *Trigger) schedule(what func()) chan bool {
+	t.logger.Info("Enter schedule")
+	stop := make(chan bool)
+	delay := t.findEarliestDelay()
+	go func() {
+		for {
+			select {
+			case <-time.After(delay):
+			case <-stop:
+				t.logger.Info("Stopping")
+				return
+			}
+			//fmt.Println("Here")
+			what() // Just print timestamp in callback
+			t.adjustTimers()
+			delay = t.findEarliestDelay()
+		}
+	}()
+
+	return stop
+}
+
 // Start implements ext.Trigger.Start
 func (t *Trigger) Start() error {
 	t.logger.Info("Starting")
@@ -178,12 +226,15 @@ func (t *Trigger) Start() error {
 	}
 	earliest := t.findEarliestNext()
 	t.logger.Info("earliest: ", earliest)
-
+	ping := func() { t.logger.Info(time.Now()) }
+	t.schedule(ping)
+	t.logger.Info("Trigger Start Completed")
 	return nil
 }
 
 // Stop implements ext.Trigger.Stop
 func (t *Trigger) Stop() error {
 	t.logger.Info("Stopping")
+	stop <- true
 	return nil
 }
