@@ -3,6 +3,7 @@ package minutemarktimer
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -20,6 +21,7 @@ var triggerMd = trigger.NewMetadata(&HandlerSettings{})
 
 func init() {
 	_ = trigger.Register(&Trigger{}, &Factory{})
+	fmt.Println("minutemarktimer: init()")
 }
 
 type Factory struct {
@@ -32,6 +34,7 @@ func (*Factory) Metadata() *trigger.Metadata {
 
 // New implements trigger.Factory.New
 func (*Factory) New(config *trigger.Config) (trigger.Trigger, error) {
+	fmt.Println("minutemarktimer: New()")
 	return &Trigger{}, nil
 }
 
@@ -51,6 +54,7 @@ type Trigger struct {
 
 // Init implements trigger.Init
 func (t *Trigger) Initialize(ctx trigger.InitContext) error {
+	fmt.Println("minutemarktimer: Initialize()")
 
 	t.handlers = ctx.GetHandlers()
 	t.logger = ctx.Logger()
@@ -197,6 +201,7 @@ func (t *Trigger) schedule() chan bool {
 
 // Start implements ext.Trigger.Start
 func (t *Trigger) Start() error {
+	fmt.Println("minutemarktimer: Start()")
 	for _, timer := range t.timers {
 		nm := calculateNextMark(timer.Interval, timer.Offset)
 		timer.nextTimestamp = nm
@@ -207,6 +212,7 @@ func (t *Trigger) Start() error {
 
 // Stop implements ext.Trigger.Stop
 func (t *Trigger) Stop() error {
+	fmt.Println("minutemarktimer: Stop()")
 	// Pushing true into the stop channel blocks at this point.
 	//stop <- true
 	return nil
