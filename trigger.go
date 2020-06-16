@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/matt-doug-davidson/timestamps"
 	"github.com/project-flogo/core/data/metadata"
 	"github.com/project-flogo/core/support/log"
 	"github.com/project-flogo/core/trigger"
@@ -137,6 +138,7 @@ func calculateNextMark(interval int64, offset int64) int64 {
 	nextMarkOfHour := currentMarkOfHour + interval
 	nextMarkSeconds := currentMinute + nextMarkOfHour - minuteOfHour
 	nextMarkNanoSecs := nextMarkSeconds * 60000000000
+	nextMarkNanoSecs += timestamps.Nanoseconds(float64(offset) * 60) // InputOffset is seconds. Convert to minutes
 	return nextMarkNanoSecs
 }
 
